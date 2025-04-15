@@ -1,0 +1,510 @@
+# Write CUDA C++ code to a file
+%%writefile sum_task.cu
+#include <stdio.h>
+
+__global__ void multiTaskKernel(int *result, int n) {
+    int tid = threadIdx.x;
+
+    if (tid == 0) {
+        int sum = 0;
+        for (int i = 1; i <= n; ++i) {
+            sum += i;
+        }
+        result[0] = sum;
+    }
+}
+
+int main() {
+    const int n = 1024;
+    int host_result = 0;
+    int *device_result;
+
+    cudaMalloc((void**)&device_result, sizeof(int));
+    multiTaskKernel<<<1, 10>>>(device_result, n);
+    cudaMemcpy(&host_result, device_result, sizeof(int), cudaMemcpyDeviceToHost);
+    printf("Sum of first %d integers (computed by thread 0): %d\n", n, host_result);
+    cudaFree(device_result);
+    return 0;
+}
+
+OUTPUT
+Writing sum_task.cu
+
+!nvcc sum_task.cu -o sum_task
+!./sum_task
+
+Sum of first 1024 integers (computed by thread 0): 0
+
+# ---------- (a) PIPELINED PARALLEL MERGE SORT (FLATTENED) ----------
+def parallel_merge_sort_flat(arr, num_chunks=4):
+    size = len(arr)
+    chunk_size = size // num_chunks
+    chunks = [arr[i*chunk_size: (i+1)*chunk_size] for i in range(num_chunks)]
+
+    # Sort each chunk in parallel
+    with mp.Pool(processes=num_chunks) as pool:
+        sorted_chunks = pool.map(sorted, chunks)
+
+    # Merge chunks sequentially
+    while len(sorted_chunks) > 1:
+        temp = []
+        for i in range(0, len(sorted_chunks), 2):
+            if i+1 < len(sorted_chunks):
+                temp.append(merge(sorted_chunks[i], sorted_chunks[i+1]))
+            else:
+                temp.append(sorted_chunks[i])
+        sorted_chunks = temp
+    return sorted_chunks[0]
+
+
+def merge(left, right):
+    result = []
+    i = j = 0
+    len_left = len(left)
+    len_right = len(right)
+
+    while i < len_left and j < len_right:
+        if left[i] <= right[j]:
+            result.append(left[i])
+            i += 1
+        else:
+            result.append(right[j])
+            j += 1
+
+    result.extend(left[i:])
+    result.extend(right[j:])
+    return result
+
+
+start_a = time.time()
+sorted_a = parallel_merge_sort_flat(arr.copy())
+end_a = time.time()
+time_a = end_a - start_a
+print("Time (Parallel Merge Sort with Pipelining):", time_a, "seconds")
+
+OUTPUT
+Time (Parallel Merge Sort with Pipelining): 0.0656731128692627 seconds
+
+from numba import cuda
+print("GPU detected:" if cuda.is_available() else "No GPU detected.")
+
+OUTPUT
+No GPU detected.
+
+!pip install cupy-cuda11x --quiet  # Use correct version for your runtime
+
+import cupy as cp
+import numpy as np
+import time
+
+OUTPUT
+usr/local/lib/python3.11/dist-packages/cupy/_environment.py:541: UserWarning: 
+--------------------------------------------------------------------------------
+
+  CuPy may not function correctly because multiple CuPy packages are installed
+  in your environment:
+
+    cupy-cuda11x, cupy-cuda12x
+
+  Follow these steps to resolve this issue:
+
+    1. For all packages listed above, run the following command to remove all
+       existing CuPy installations:
+
+         $ pip uninstall <package_name>
+
+      If you previously installed CuPy via conda, also run the following:
+
+         $ conda uninstall cupy
+
+    2. Install the appropriate CuPy package.
+       Refer to the Installation Guide for detailed instructions.
+
+         https://docs.cupy.dev/en/stable/install.html
+--------------------------------------------------------------------------------
+
+  warnings.warn(f'''
+
+# Install PyTorch in Colab (if not already installed)
+!pip install torch --quiet
+
+OUTPUT
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 363.4/363.4 MB 3.9 MB/s eta 0:00:00
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 13.8/13.8 MB 81.1 MB/s eta 0:00:00
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 24.6/24.6 MB 60.9 MB/s eta 0:00:00
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 883.7/883.7 kB 42.7 MB/s eta 0:00:00
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 664.8/664.8 MB 2.6 MB/s eta 0:00:00
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 211.5/211.5 MB 6.1 MB/s eta 0:00:00
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 56.3/56.3 MB 13.4 MB/s eta 0:00:00
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 127.9/127.9 MB 7.0 MB/s eta 0:00:00
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 207.5/207.5 MB 5.3 MB/s eta 0:00:00
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 21.1/21.1 MB 79.9 MB/s eta 0:00:00
+ 
+[ ]
+
+
+# Import necessary libraries
+import torch
+import numpy as np
+import time
+
+import torch
+
+# Check if CUDA is available
+if torch.cuda.is_available():
+    print("CUDA is available. GPU detected.")
+else:
+    print("CUDA is not available. Running on CPU.")
+
+OUTPUT
+CUDA is available. GPU detected.
+
+
+import torch
+import numpy as np
+import time
+
+# Parameters
+N = 1024  # Size of vectors
+
+# Create random vectors
+A = np.random.rand(N).astype(np.float32)
+B = np.random.rand(N).astype(np.float32)
+
+# Move arrays to GPU
+device = "cuda" if torch.cuda.is_available() else "cpu"  # Use GPU if available, otherwise CPU
+d_A = torch.tensor(A).to(device)
+d_B = torch.tensor(B).to(device)
+
+# Time the GPU operation
+start = time.time()
+d_C = d_A + d_B  # Vector addition on GPU
+torch.cuda.synchronize()  # Ensure all operations are completed before measuring time
+end = time.time()
+
+# Copy back to host (CPU) if on GPU
+C = d_C.cpu().numpy()
+
+# Output
+print("First 5 elements of result C:", C[:5])
+print("Vector addition time on", device.upper(), ":", round(end - start, 6), "seconds")
+
+OUTPUT
+First 5 elements of result C: [1.3768172  0.13946678 0.46106604 1.2665392  0.99768394]
+Vector addition time on CUDA : 0.040966 seconds
+
+
+import torch
+import numpy as np
+import time
+
+# Parameters
+N = 1024  # Size of vectors
+
+# Create random vectors
+A = np.random.rand(N).astype(np.float32)
+B = np.random.rand(N).astype(np.float32)
+
+# Move arrays to GPU
+device = "cuda" if torch.cuda.is_available() else "cpu"  # Use GPU if available, otherwise CPU
+d_A = torch.tensor(A).to(device)
+d_B = torch.tensor(B).to(device)
+
+# Record start time on GPU using CUDA events
+start_event = torch.cuda.Event(enable_timing=True)
+end_event = torch.cuda.Event(enable_timing=True)
+
+# Record the start event
+start_event.record()
+
+# Time the GPU operation (Vector addition)
+d_C = d_A + d_B  # Vector addition on GPU
+torch.cuda.synchronize()  # Ensure all operations are completed before measuring time
+
+# Record the end event
+end_event.record()
+
+# Wait for the events to complete
+torch.cuda.synchronize()
+
+# Calculate elapsed time
+elapsed_time = start_event.elapsed_time(end_event)  # Time in milliseconds
+
+# Copy back to host (CPU)
+C = d_C.cpu().numpy()
+
+# Output
+print("First 5 elements of result C:", C[:5])
+print(f"Kernel execution time: {elapsed_time / 1000:.6f} seconds")  # Convert milliseconds to seconds
+
+OUTPUT
+First 5 elements of result C: [1.6182448  0.92549825 1.2711116  1.1689965  0.9943259 ]
+Kernel execution time: 0.000401 seconds
+
+
+# Write the CUDA code to a file (vector_add.cu)
+%%writefile vector_add.cu
+#include <iostream>
+#include <cstdio>
+
+#define N 1024  // Size of the vectors
+
+// CUDA kernel for vector addition
+__global__ void vectorAddKernel(float *A, float *B, float *C) {
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    if (idx < N) {
+        C[idx] = A[idx] + B[idx];
+    }
+}
+
+int main() {
+    // Declare and allocate memory for the host vectors
+    float *A, *B, *C;
+    float *d_A, *d_B, *d_C;
+    size_t size = N * sizeof(float);
+
+    A = (float*)malloc(size);
+    B = (float*)malloc(size);
+    C = (float*)malloc(size);
+
+    // Initialize the vectors with random values
+    for (int i = 0; i < N; i++) {
+        A[i] = rand() / (float)RAND_MAX;
+        B[i] = rand() / (float)RAND_MAX;
+    }
+
+    // Allocate memory on the device
+    cudaMalloc((void**)&d_A, size);
+    cudaMalloc((void**)&d_B, size);
+    cudaMalloc((void**)&d_C, size);
+
+    // Copy data from host to device
+    cudaMemcpy(d_A, A, size, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_B, B, size, cudaMemcpyHostToDevice);
+
+    // Set up grid and block dimensions
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
+
+    // Launch the kernel
+    vectorAddKernel<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C);
+
+    // Wait for the kernel to complete
+    cudaDeviceSynchronize();
+
+    // Copy the result from device to host
+    cudaMemcpy(C, d_C, size, cudaMemcpyDeviceToHost);
+
+    // Output the first 5 elements of the result
+    std::cout << "First 5 elements of result C: ";
+    for (int i = 0; i < 5; i++) {
+        std::cout << C[i] << " ";
+    }
+    std::cout << std::endl;
+
+    // Clean up
+    free(A);
+    free(B);
+    free(C);
+    cudaFree(d_A);
+    cudaFree(d_B);
+    cudaFree(d_C);
+
+    return 0;
+}
+
+
+OUTPUT
+Writing vector_add.cu
+
+
+#include <iostream>
+#include <cstdio>
+#include <ctime>  // Include for clock_t
+
+#define N 1024  // Size of the vectors
+
+// CUDA kernel for vector addition
+__global__ void vectorAddKernel(float *A, float *B, float *C) {
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    if (idx < N) {
+        C[idx] = A[idx] + B[idx];
+    }
+}
+
+int main() {
+    // Declare and allocate memory for the host vectors
+    float *A, *B, *C;
+    float *d_A, *d_B, *d_C;
+    size_t size = N * sizeof(float);
+
+    A = (float*)malloc(size);
+    B = (float*)malloc(size);
+    C = (float*)malloc(size);
+
+    // Initialize the vectors with random values
+    for (int i = 0; i < N; i++) {
+        A[i] = rand() / (float)RAND_MAX;
+        B[i] = rand() / (float)RAND_MAX;
+    }
+
+    // Allocate memory on the device
+    cudaMalloc((void**)&d_A, size);
+    cudaMalloc((void**)&d_B, size);
+    cudaMalloc((void**)&d_C, size);
+
+    // Copy data from host to device
+    cudaMemcpy(d_A, A, size, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_B, B, size, cudaMemcpyHostToDevice);
+
+    // Set up grid and block dimensions
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
+
+    // Record the start time using clock_t
+    clock_t start = clock();
+
+    // Launch the kernel
+    vectorAddKernel<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C);
+
+    // Wait for the kernel to complete
+    cudaDeviceSynchronize();
+
+    // Record the end time using clock_t
+    clock_t end = clock();
+
+    // Calculate the elapsed time in seconds
+    double elapsed_time = double(end - start) / CLOCKS_PER_SEC * 1000;  // in milliseconds
+
+    // Copy the result from device to host
+    cudaMemcpy(C, d_C, size, cudaMemcpyDeviceToHost);
+
+    // Output the first 5 elements of result
+    std::cout << "First 5 elements of result C: ";
+    for (int i = 0; i < 5; i++) {
+        std::cout << C[i] << " ";
+    }
+    std::cout << std::endl;
+
+    // Output kernel execution time in milliseconds
+    std::cout << "Kernel execution time: " << elapsed_time << " ms" << std::endl;
+
+    // Clean up
+    free(A);
+    free(B);
+    free(C);
+    cudaFree(d_A);
+    cudaFree(d_B);
+    cudaFree(d_C);
+
+    return 0;
+}
+
+
+OUTPUT
+File "<ipython-input-13-52fa44ae8a0c>", line 7
+    // CUDA kernel for vector addition
+    ^
+SyntaxError: invalid syntax
+
+
+#include <iostream>
+#include <cstdio>
+#include <ctime>  // Include for clock_t
+
+#define N 1024  // Size of the vectors
+
+// CUDA kernel for vector addition
+__global__ void vectorAddKernel(float *A, float *B, float *C) {
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    if (idx < N) {
+        C[idx] = A[idx] + B[idx];
+    }
+}
+
+int main() {
+    // Declare and allocate memory for the host vectors
+    float *A, *B, *C;
+    float *d_A, *d_B, *d_C;
+    size_t size = N * sizeof(float);
+
+    A = (float*)malloc(size);
+    B = (float*)malloc(size);
+    C = (float*)malloc(size);
+
+    // Initialize the vectors with random values
+    for (int i = 0; i < N; i++) {
+        A[i] = rand() / (float)RAND_MAX;
+        B[i] = rand() / (float)RAND_MAX;
+    }
+
+    // Allocate memory on the device (GPU)
+    cudaMalloc((void**)&d_A, size);
+    cudaMalloc((void**)&d_B, size);
+    cudaMalloc((void**)&d_C, size);
+
+    // Copy data from host to device (GPU)
+    cudaMemcpy(d_A, A, size, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_B, B, size, cudaMemcpyHostToDevice);
+
+    // Set up grid and block dimensions
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
+
+    // Record the start time using clock_t
+    clock_t start = clock();
+
+    // Launch the kernel
+    vectorAddKernel<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C);
+
+    // Wait for the kernel to complete
+    cudaDeviceSynchronize();
+
+    // Record the end time using clock_t
+    clock_t end = clock();
+
+    // Calculate the elapsed time in seconds (in ms)
+    double elapsed_time = double(end - start) / CLOCKS_PER_SEC * 1000;  // in milliseconds
+
+    // Copy the result from device to host (GPU to CPU)
+    cudaMemcpy(C, d_C, size, cudaMemcpyDeviceToHost);
+
+    // Output the first 5 elements of the result
+    std::cout << "First 5 elements of result C: ";
+    for (int i = 0; i < 5; i++) {
+        std::cout << C[i] << " ";
+    }
+    std::cout << std::endl;
+
+    // Calculate the number of bytes read and written by the kernel
+    size_t RBytes = N * sizeof(float);  // Number of bytes read (A and B vectors)
+    size_t WBytes = N * sizeof(float);  // Number of bytes written (C vector)
+
+    // Calculate measured bandwidth (in bytes per second)
+    double measuredBW = (RBytes + WBytes) / (elapsed_time / 1000.0);  // Convert time to seconds
+
+    // Output the measured bandwidth in GB/s
+    std::cout << "Measured Bandwidth: " << measuredBW / (1024.0 * 1024.0 * 1024.0) << " GB/s" << std::endl;
+
+    // Clean up
+    free(A);
+    free(B);
+    free(C);
+    cudaFree(d_A);
+    cudaFree(d_B);
+    cudaFree(d_C);
+
+    return 0;
+}
+
+
+OUTPUT
+ File "<ipython-input-14-787f87b97840>", line 7
+    // CUDA kernel for vector addition
+    ^
+SyntaxError: invalid syntax
+
+
+
+
+
